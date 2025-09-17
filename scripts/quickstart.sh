@@ -1,65 +1,94 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ID="afs-rsoc-api-v2"
-REGION="us-central1"
-STG_SVC="afs-rsoc-api-stg"
-PRD_SVC="afs-rsoc-api"
+# RSOC — Hardened Quickstart (self-healing)
 
-STG_TOKEN_SECRET="RSOC_API_TOKEN_STG"
-STG_DB_SECRET="DATABASE_URL_STG"
-PRD_TOKEN_SECRET="RSOC_API_TOKEN"
-PRD_DB_SECRET="DATABASE_URL"
+PROJECT="${PROJECT:-afs-rsoc-api-v2}"
+REGION="${REGION:-us-central1}"
+SERVICE="${SERVICE:-afs-rsoc-api-stg}"
+INSTANCE_CONN="${INSTANCE_CONN:-afs-rsoc-api-v2:us-central1:afs-postgres}"
+DB_INSTANCE="${DB_INSTANCE:-afs-postgres}"
+DB_NAME="${DB_NAME:-rsocdb}"
+DB_USER="${DB_USER:-afsuser}"
+AUTH_SECRET="${AUTH_SECRET:-RSOC_API_TOKEN_STG}"
+DBURL_SECRET="${DBURL_SECRET:-DATABASE_URL_STG}"
 
-WITH_DB=0
-[[ "${1:-}" == "--with-db" ]] && WITH_DB=1
+log(){ printf "\033[1;36m➡ %s\033[0m\n" "$*"; }
+ok(){  printf "\033[1;32m✓ %s\033[0m\n" "$*"; }
+warn(){printf "\033[1;33m! %s\033[0m\n" "$*"; }
+fail(){ printf "\033[1;31m✗ %s\033[0m\n" "$*"; exit 1; }
 
-gcloud config set project "$PROJECT_ID" >/dev/null
-PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
-RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+need(){ command -v "$1" >/dev/null || fail "Missing dependency: $1"; }
 
-git pull --rebase || true
-npm i --silent || true
-
-for S in "$STG_TOKEN_SECRET" "$PRD_TOKEN_SECRET" "$STG_DB_SECRET" "$PRD_DB_SECRET"; do
-  if gcloud secrets describe "$S" >/dev/null 2>&1; then
-    gcloud secrets add-iam-policy-binding "$S" \
-      --member="serviceAccount:${RUNTIME_SA}" \
-      --role="roles/secretmanager.secretAccessor" >/dev/null || true
-  fi
-done
-
-# תמיד מצמידים AUTH_TOKEN; DB רק אם --with-db ויש סיקרט
-SET_ARGS="AUTH_TOKEN=${STG_TOKEN_SECRET}:latest"
-if [[ $WITH_DB -eq 1 ]] && gcloud secrets describe "$STG_DB_SECRET" >/dev/null 2>&1; then
-  SET_ARGS="${SET_ARGS},DATABASE_URL=${STG_DB_SECRET}:latest"
-else
-  # אם בטעות היה מוצמד DB בעבר – מורידים אותו כדי שה-health יהיה ירוק
-  gcloud run services update "$STG_SVC" --region "$REGION" --remove-secrets DATABASE_URL --quiet >/dev/null 2>&1 || true
-fi
-gcloud run services update "$STG_SVC" --region "$REGION" --set-secrets "$SET_ARGS" --quiet || true
-
-# PRD: יעדכן רק אם השירות קיים, באותה לוגיקה (ללא DB כברירת מחדל)
-if gcloud run services describe "$PRD_SVC" --region "$REGION" >/dev/null 2>&1; then
-  PRD_ARGS="AUTH_TOKEN=${PRD_TOKEN_SECRET}:latest"
-  if [[ $WITH_DB -eq 1 ]] && gcloud secrets describe "$PRD_DB_SECRET" >/dev/null 2>&1; then
-    PRD_ARGS="${PRD_ARGS},DATABASE_URL=${PRD_DB_SECRET}:latest"
+ensure_secret(){
+  local name="$1" value="$2"
+  if gcloud secrets describe "$name" >/dev/null 2>&1; then
+    [ -n "$value" ] && printf "%s" "$value" | gcloud secrets versions add "$name" --data-file=- >/dev/null && ok "Secret updated: $name" || ok "Secret exists: $name"
   else
-    gcloud run services update "$PRD_SVC" --region "$REGION" --remove-secrets DATABASE_URL --quiet >/dev/null 2>&1 || true
+    [ -n "$value" ] || fail "Secret $name missing and no value supplied"
+    printf "%s" "$value" | gcloud secrets create "$name" --data-file=- >/dev/null
+    ok "Secret created: $name"
   fi
-  gcloud run services update "$PRD_SVC" --region "$REGION" --set-secrets "$PRD_ARGS" --quiet || true
-fi
+}
 
-STG_URL=$(gcloud run services describe "$STG_SVC" --region "$REGION" --format='value(status.url)')
-echo "STG URL: $STG_URL"
+latest_secret_val(){
+  gcloud secrets versions access latest --secret="$1" 2>/dev/null || true
+}
 
-TOKEN=$(gcloud secrets versions access latest --secret="$STG_TOKEN_SECRET" 2>/dev/null || echo "stg-token-CHANGE-ME")
+ensure_db_user(){
+  local user="$1" pass="$2"
+  gcloud sql users set-password "$user" --instance="$DB_INSTANCE" --password="$pass" >/dev/null \
+    && ok "DB user password set ($user)"
+}
 
-set +e
-curl -sf "$STG_URL/api/health" >/dev/null && echo "✅ health OK" || echo "❌ health FAILED"
-curl -si -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"utm_source":"fb","source":"facebook","account_id":"1","campaign_id":"2","adset_id":"3","ad_id":"4"}' "$STG_URL/api/tracking" | head -n1
-curl -si -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"click_id":"11111111-1111-1111-1111-111111111111","value":1.23,"currency":"USD"}' "$STG_URL/api/convert" | head -n1
-set -e
-echo "🎯 Done."
+wire_service(){
+  gcloud run services update "$SERVICE" \
+    --region "$REGION" \
+    --add-cloudsql-instances "$INSTANCE_CONN" \
+    --set-secrets=AUTH_TOKEN=${AUTH_SECRET}:latest,DATABASE_URL=${DBURL_SECRET}:latest \
+    --update-env-vars=DB_ENABLED=true,RELOAD_TS=$(date +%s) >/dev/null
+  ok "Service updated (secrets + Cloud SQL)"
+}
+
+health_check(){
+  local url; url="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')"
+  [ -n "$url" ] || fail "Service URL not found"
+  ok "Service URL: $url"
+  local out=""
+  for i in {1..15}; do
+    out="$(curl -sS "$url/api/health" || true)"
+    echo "$out" | grep -q '"db":true' && { ok "Health OK (db:true)"; echo "$out"; return 0; }
+    sleep 2
+  done
+  echo "$out"
+  return 1
+}
+
+main(){
+  need gcloud; need curl
+  log "Set project → $PROJECT"
+  gcloud config set project "$PROJECT" >/dev/null
+
+  # Ensure AUTH secret exists
+  ensure_secret "$AUTH_SECRET" ""
+
+  # Ensure DATABASE_URL secret exists and is valid (points to $DB_NAME via socket)
+  local dburl
+  dburl="$(latest_secret_val "$DBURL_SECRET")"
+  if [[ -z "$dburl" || "$dburl" != *"/$DB_NAME?host=/cloudsql/$INSTANCE_CONN"* ]]; then
+    warn "DATABASE_URL missing or mismatched DB/instance → self-healing"
+    local pass; pass="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c24)"
+    ensure_db_user "$DB_USER" "$pass"
+    dburl="postgresql://$DB_USER:$pass@/$DB_NAME?host=/cloudsql/$INSTANCE_CONN&sslmode=disable"
+    ensure_secret "$DBURL_SECRET" "$dburl"
+  else
+    ok "DATABASE_URL secret looks aligned"
+  fi
+
+  wire_service
+
+  if ! health_check; then
+    warn "db:false after update → printing last errors"
+    gcloud logging read \
+      'resource.type="cloud_run_revision" resource.labels.service_name="'$SERVICE'" severity>=ERROR' \
+      --limit=50

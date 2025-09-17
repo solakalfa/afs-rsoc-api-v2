@@ -1,0 +1,17 @@
+{
+  "name": "afs-rsoc-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node services/api/server.mjs",
+    "dev": "node services/api/server.mjs"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.1.5",
+    "pg": "^8.11.5",
+    "uuid": "^9.0.1",
+    "zod": "^3.23.8"
+  }
+}

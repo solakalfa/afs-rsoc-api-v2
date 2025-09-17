@@ -1,4 +1,12 @@
-Date: 2025-09-17 (Asia/Jerusalem)
+## 2025-09-17
+- Deployed afs-rsoc-api-stg revision 00015-rls (Cloud Run).
+- Health check `/api/health` returns ok:true, db:true.
+- Secrets (RSOC_API_TOKEN_STG, DATABASE_URL_STG) attached and verified.
+- Middlewares (auth, traceId, rateLimit, validate, idempotency) added under services/api/.
+- Branch feat/m2-harden-core created and pushed.
+Next: prepare and run Postman/Newman tests for API Hardening (M2.3).
+
+## Date: 2025-09-17 (Asia/Jerusalem)
 
 Context: Continued from “RSOC API – Reset & Clean Stage.1”. Cloud Shell + GitHub repo afs-rsoc-api-v2.
 

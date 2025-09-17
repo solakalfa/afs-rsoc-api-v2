@@ -1,3 +1,54 @@
+// --- add near the top (imports) ---
+import express from 'express';
+import { withTraceId } from './middleware/traceId.mjs';
+import { requireBearer } from './middleware/auth.mjs';
+import { rateLimit } from './middleware/rateLimit.mjs';
+import { validate } from './middleware/validate.mjs';
+import { idempotent } from './lib/idempotency.mjs';
+
+// --- ensure app/init ---
+const app = express();
+app.use(express.json());
+app.use(withTraceId);
+
+// --- existing health route (keep yours) ---
+// app.get('/api/health', ...)
+
+// --- protected + limited example ---
+app.post(
+  '/api/tracking',
+  requireBearer,
+  rateLimit({ max: 120 }),
+  validate(['event', 'userId']),
+  (req, res) => res.json({ ok: true, traceId: req.traceId })
+);
+
+// --- idempotent example ---
+app.post(
+  '/api/convert',
+  requireBearer,
+  rateLimit({ max: 30 }),
+  validate(['input']),
+  idempotent(async (req, res) => {
+    const output = String(req.body.input).toUpperCase();
+    return res.json({ ok: true, result: output, traceId: req.traceId });
+  })
+);
+
+// --- optional: DB health (requires 'pg' installed) ---
+app.get('/api/health-db', async (req, res) => {
+  try {
+    const { Client } = await import('pg');
+    const client = new Client({ connectionString: process.env.DATABASE_URL, ssl: false });
+    await client.connect();
+    const r = await client.query('SELECT 1 as ok');
+    await client.end();
+    return res.json({ ok: true, db: r.rows[0]?.ok === 1, traceId: req.traceId });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message, traceId: req.traceId });
+  }
+});
+
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { v4 as uuidv4 } from "uuid";

@@ -1,1 +1,1 @@
-{"ok":true,"db":false,"now":"2025-09-17T18:28:00.728Z","traceId":"5f7f2dfd-4af3-4278-ad48-44acb51e74d6"}
+{"ok":false,"error":"getaddrinfo EAI_AGAIN HOST","traceId":"5039c475-8fc8-45e2-b60b-b831cc053e82"}

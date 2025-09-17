@@ -1,0 +1,113 @@
+{
+  "info": {
+    "name": "RSOC API — M2.3 Functional Tests",
+    "_postman_id": "c6f3a6fe-8f3a-4d7a-9f15-0000rsocm23",
+    "description": "Hardening tests: auth (401), validation (422), success (200), idempotency for /api/convert.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "{{BASE_URL}}" },
+    { "key": "auth_token", "value": "{{AUTH_TOKEN}}" },
+    { "key": "idem_key", "value": "k{{timestamp}}" }
+  ],
+  "item": [
+    {
+      "name": "TRACKING — 200 OK",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{base_url}}/api/tracking", "host": ["{{base_url}}"], "path": ["api","tracking"] },
+        "body": { "mode": "raw", "raw": "{\"event\":\"ping\",\"userId\":\"u1\"}" }
+      },
+      "response": [],
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('status 200', () => pm.response.code === 200);",
+          "const j = pm.response.json();",
+          "pm.test('ok true', () => j.ok === true);",
+          "pm.test('has traceId', () => !!j.traceId);"
+        ], "type": "text/javascript" }
+      }]
+    },
+    {
+      "name": "TRACKING — 401 Unauthorized (no token)",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "url": { "raw": "{{base_url}}/api/tracking", "host": ["{{base_url}}"], "path": ["api","tracking"] },
+        "body": { "mode": "raw", "raw": "{\"event\":\"ping\",\"userId\":\"u1\"}" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('status 401', () => pm.response.code === 401);"
+        ], "type": "text/javascript" }
+      }]
+    },
+    {
+      "name": "TRACKING — 422 Validation (missing fields)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{base_url}}/api/tracking", "host": ["{{base_url}}"], "path": ["api","tracking"] },
+        "body": { "mode": "raw", "raw": "{\"event\":\"ping\"}" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('status 422', () => pm.response.code === 422);",
+          "const j = pm.response.json();",
+          "pm.test('has missing', () => Array.isArray(j.missing) && j.missing.length > 0);"
+        ], "type": "text/javascript" }
+      }]
+    },
+    {
+      "name": "CONVERT — 200 OK (first call, store response)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+          { "key": "Idempotency-Key", "value": "{{idem_key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{base_url}}/api/convert", "host": ["{{base_url}}"], "path": ["api","convert"] },
+        "body": { "mode": "raw", "raw": "{\"input\":\"abc\"}" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('status 200', () => pm.response.code === 200);",
+          "pm.collectionVariables.set('prev_convert', pm.response.text());"
+        ], "type": "text/javascript" }
+      }]
+    },
+    {
+      "name": "CONVERT — Idempotency (second call, same key, same response)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+          { "key": "Idempotency-Key", "value": "{{idem_key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{base_url}}/api/convert", "host": ["{{base_url}}"], "path": ["api","convert"] },
+        "body": { "mode": "raw", "raw": "{\"input\":\"abc\"}" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('status 200', () => pm.response.code === 200);",
+          "const prev = pm.collectionVariables.get('prev_convert');",
+          "pm.test('same body as first call', () => prev === pm.response.text());"
+        ], "type": "text/javascript" }
+      }]
+    }
+  ]
+}

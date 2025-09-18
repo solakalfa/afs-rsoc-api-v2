@@ -1,3 +1,23 @@
+openapi: 3.0.3
+info:
+  title: RSOC API
+  version: 0.2.0
+servers:
+  - url: https://STG_SERVICE_URL  # replace with Cloud Run URL
+paths:
+  /api/health:
+    get:
+      summary: Health
+      responses:
+        '200':
+          description: OK
+  /api/health-db:
+    get:
+      summary: DB Health
+      responses:
+        '200':
+          description: OK
+# TODO (M2): tracking/convert with 401/422/429 & Idempotency-Key contract
 
 ---
 

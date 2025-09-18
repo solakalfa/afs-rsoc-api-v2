@@ -21,7 +21,7 @@ while getopts "p:r:u:d:s:" opt; do
     d) REPO_DIR="$OPTARG" ;;
     s) SERVICE_PREFIX="$OPTARG" ;;
     *) echo "Usage: $0 -p <PROJECT_ID> [-r region] [-u repo_url] [-d repo_dir] [-s service_prefix]"; exit 1 ;;
-  endac
+  esac
 done 2>/dev/null || true
 
 log(){ printf "\n== %s ==\n" "$*"; }

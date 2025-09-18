@@ -23,7 +23,7 @@
     <script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.min.js" defer></script>
     <script>
       window.addEventListener('DOMContentLoaded', function() {
-        Redoc.init('/openapi.m21.yaml',
+        Redoc.init('./openapi.m21.yaml',
           {
             scrollYOffset: 52,
             expandResponses: "200,401,422",
@@ -43,7 +43,7 @@
     <div class="topbar">
       <div class="brand">RSOC API — Internal M2.1</div>
       <nav>
-        <a href="/openapi.m21.yaml" download>openapi.m21.yaml</a>
+        <a href="./openapi.m21.yaml" download>openapi.m21.yaml</a>
       </nav>
     </div>
     <div id="redoc"></div>

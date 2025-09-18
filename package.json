@@ -8,6 +8,7 @@
     "dev": "node services/api/server.mjs"
   },
   "dependencies": {
+    "dotenv": "^17.2.2",
     "express": "^4.19.2",
     "express-rate-limit": "^7.1.5",
     "pg": "^8.11.5",

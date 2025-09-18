@@ -1,5 +1,16 @@
 # Project Journal
 
+## [2025-09-18] Start M2.1 — Auth & Validation
+
+- התחלה רשמית של M2.1 (Auth & Validation).
+- נוסף Bearer token middleware (401).
+- נוסף validation פר־נתיב ל־tracking/convert (422 JSON אחיד).
+- נבנה קובץ Postman (rsoc-auth-validation.json) עם בדיקות ל־happy path + 401/422.
+- Daily Start script עודכן: בחירת פרויקט afs-rsoc-api-v2, שליפת STG_URL, הרצת Newman אוטומטית.
+- Newman רץ בהצלחה מול STG (לאחר חיבור לחשבון GCP והגדרת STG_URL).
+- סטטוס: ✅ קוד ובדיקות מוכנים; ⚠️ טרם בוצע עדכון מלא ל־docs/openapi.yaml.
+- זמן בפועל עד כה: ~2 שעות (GPT + אני).
+
 ## 2025-09-18
 - Added Technical Execution Log (source-of-truth canvas). Aligned M1→M2 tasks.
 - Verified STG service is healthy on `/api/health`. Noted `/api/health-db` needs route check.

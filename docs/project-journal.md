@@ -1,3 +1,16 @@
+# Project Journal
+
+## 2025-09-18
+- Added Technical Execution Log (source-of-truth canvas). Aligned M1→M2 tasks.
+- Verified STG service is healthy on `/api/health`. Noted `/api/health-db` needs route check.
+
+## 2025-09-17
+- Deployed latest STG revision via `scripts/quickstart.sh`. Newman smoke OK.
+
+## 2025-09-16
+- Confirmed secrets present: `RSOC_API_TOKEN_STG`, `DATABASE_URL_STG`. Cloud SQL reachable.
+
+
 ## 2025-09-17
 - Deployed afs-rsoc-api-stg revision 00015-rls (Cloud Run).
 - Health check `/api/health` returns ok:true, db:true.

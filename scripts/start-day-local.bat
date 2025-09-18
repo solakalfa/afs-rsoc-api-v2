@@ -22,7 +22,6 @@ goto WAIT_HEALTH
 
 :HEALTH_OK
 echo OK: Health
-curl -s http://127.0.0.1:8080/api/health-db & echo.
 goto END
 
 :HEALTH_TIMEOUT

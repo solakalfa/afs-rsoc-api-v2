@@ -19,3 +19,9 @@
 7. Docs: OpenAPI/Redoc sync
 
 > Work order: 1 → 3 → 2 → 4 → 5 → 6 → 7
+### M2.1 — Auth & Validation (401/422)
+- ✅ Bearer token auth הוטמע.
+- ✅ Validation פר־נתיב הוטמע.
+- ✅ Newman tests (happy path, 401, 422).
+- ⚠️ עדכון OpenAPI טרם הושלם (נדרש מיזוג מלא מול הקובץ הקיים המשמש הצהרה ל־Tarzo).
+- זמן בפועל: ~2 שעות (בשלב זה).

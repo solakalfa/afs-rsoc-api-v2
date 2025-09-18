@@ -3,5 +3,7 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/", "destination": "/docs/index.html" }
-  ]
+  ],
+  "ignoreCommand": "echo 'skip build'",
+  "outputDirectory": "."
 }

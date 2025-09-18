@@ -19,9 +19,22 @@
 7. Docs: OpenAPI/Redoc sync
 
 > Work order: 1 → 3 → 2 → 4 → 5 → 6 → 7
+
 ### M2.1 — Auth & Validation (401/422)
 - ✅ Bearer token auth הוטמע.
-- ✅ Validation פר־נתיב הוטמע.
-- ✅ Newman tests (happy path, 401, 422).
-- ⚠️ עדכון OpenAPI טרם הושלם (נדרש מיזוג מלא מול הקובץ הקיים המשמש הצהרה ל־Tarzo).
-- זמן בפועל: ~2 שעות (בשלב זה).
+- ✅ Validation פר־נתיב הוטמע (Zod).
+- ✅ Newman tests (happy path, 401, 422) רצות כחלק מ־Daily Start.
+- ✅ Daily Start script עודכן לכלול auth & validation.
+- ✅ OpenAPI פנימי (openapi.m21.yaml) + ReDoc פנימי בפרויקט docs ב־Vercel.
+- זמן בפועל: ~3h (בתוך התחזית 5h).
+- סטטוס: **Completed**
+
+### M2.2 — Hardening & Reliability (🚧 Planned)
+- Rate limiting (429) פר token+IP, תגובת JSON עקבית.
+- Idempotency-Key ל־`/api/convert` (חובה); future ל־`/api/tracking`.
+- Outbound CAPI Worker: retry/backoff (exp+jitter), DLQ, metrics.
+- TraceId logging: `x-request-id` ↔ log context ↔ response echo.
+- OpenAPI: עדכון עם 429/409 headers, Idempotency-Key param.
+- Newman: בדיקות rate limit + idempotency.
+- הערכת זמן: ~7h (GPT:3h, User:4h).
+- סטטוס: **Planned**

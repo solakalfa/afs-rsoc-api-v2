@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>RSOC API — Internal M2.1 (ReDoc)</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <style>
+      :root { --bg:#0b0d12; --fg:#e6e9ef; --muted:#8e9bb3; }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg); }
+      .topbar {
+        position: fixed; top: 0; left: 0; right: 0; height: 48px;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 12px; background: rgba(255,255,255,0.04); backdrop-filter: blur(6px);
+        border-bottom: 1px solid rgba(255,255,255,0.06); z-index: 10; font: 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell;
+      }
+      .topbar a { color: var(--muted); text-decoration: none; }
+      .topbar a:hover { color: var(--fg); }
+      #redoc { position: absolute; top: 48px; left: 0; right: 0; bottom: 0; }
+      .brand { font-weight: 600; letter-spacing: .2px; color: var(--fg); }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.min.js" defer></script>
+    <script>
+      window.addEventListener('DOMContentLoaded', function() {
+        Redoc.init('/openapi.m21.yaml',
+          {
+            scrollYOffset: 52,
+            expandResponses: "200,401,422",
+            hideDownloadButton: false,
+            pathInMiddlePanel: true,
+            theme: {
+              colors: { primary: { main: "#6aa6ff" } },
+              typography: { fontSize: "14px", lineHeight: "1.5" }
+            }
+          },
+          document.getElementById('redoc')
+        );
+      });
+    </script>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand">RSOC API — Internal M2.1</div>
+      <nav>
+        <a href="/openapi.m21.yaml" download>openapi.m21.yaml</a>
+      </nav>
+    </div>
+    <div id="redoc"></div>
+  </body>
+</html>

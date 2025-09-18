@@ -1,0 +1,86 @@
+{
+  "info": {
+    "name": "RSOC M2.2 MVP \u2014 Smoke",
+    "_postman_id": "m22-mvp-smoke",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Rate Limit \u2014 /api/convert",
+      "event": [],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{TOKEN}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{BASE_URL}}/api/convert",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "api",
+            "convert"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"example\": \"x\"}"
+        }
+      },
+      "protocolProfileBehavior": {},
+      "response": []
+    },
+    {
+      "name": "Idempotency \u2014 Replay",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{TOKEN}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{$guid}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{BASE_URL}}/api/convert",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "api",
+            "convert"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"order_id\": \"123\", \"value\": 42}"
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "TOKEN",
+      "value": "replace-me"
+    }
+  ]
+}

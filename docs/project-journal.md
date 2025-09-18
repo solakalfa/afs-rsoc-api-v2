@@ -1,4 +1,14 @@
 # Project Journal
+## [2025-09-18] Closing M2.1 — Auth & Validation
+
+- הושלם פיתוח שכבת Auth & Validation.
+- נוסף Bearer token middleware → 401 עקבי לקריאות ללא טוקן/טוקן שגוי.
+- נוסף Validation עם Zod פר־נתיב → 422 JSON עקבי עם issues.
+- עודכנו בדיקות Newman (happy path, 401, 422).
+- Daily Start script עודכן להריץ את Auth & Validation כחלק מ־Smoke.
+- OpenAPI פנימי (openapi.m21.yaml) נבנה והועלה ל־Vercel (תצוגה פנימית).
+- זמן בפועל: ~3h (עד כה). בתוך התחזית של 5h.
+- סטטוס: ✅ Milestone M2.1 סגור.
 
 ## [2025-09-18] Start M2.1 — Auth & Validation
 

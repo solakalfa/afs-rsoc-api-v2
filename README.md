@@ -2,6 +2,10 @@
 
 Attribution Hub API — GCP Cloud Run + Cloud SQL (Postgres).
 
+## Branch Policy
+Work only on `master`. Do not edit via GitHub UI (no patch branches).
+
+
 ## Daily Start
 ```bash
 gcloud config set project afs-rsoc-api-v2 && \

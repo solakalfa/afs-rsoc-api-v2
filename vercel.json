@@ -1,9 +1,11 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [
-    { "source": "/", "destination": "/docs/index.html" }
+  "builds": [
+    { "src": "docs/**", "use": "@vercel/static" },
+    { "src": "openapi.m21.yaml", "use": "@vercel/static" }
   ],
-  "ignoreCommand": "echo 'skip build'",
-  "outputDirectory": "."
+  "routes": [
+    { "src": "/", "dest": "/docs/index.html" }
+  ]
 }

@@ -4,3 +4,4 @@ node_modules
 scripts/secret-set.sh
 .vercel
 .env.local
+-e "logs/\nUUID\n.env*\n*.local\nscripts/*.v2.*\n**/*.log\n" 

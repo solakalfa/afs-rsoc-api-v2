@@ -9,7 +9,7 @@ import { router as healthRouter } from "./src/routes/health.mjs";
 import { router as trackingRouter } from "./src/routes/tracking.mjs";
 import { router as convertRouter } from "./src/routes/convert.mjs";
 import { router as reportingRouter } from "./src/routes/reporting.mjs";
-import { router as eventsRouter } from "./routes/api/events.mjs";  // ← חדש
+import { router as eventsRouter } from "./src/routes/events.mjs";
 import { db } from "./src/lib/db.mjs";
 
 const app = express();
@@ -52,7 +52,7 @@ app.use("/api", healthRouter);
 app.use("/api", trackingRouter);
 app.use("/api", convertRouter);
 app.use("/api", reportingRouter);
-app.use("/api", eventsRouter); // ← חדש
+app.use("/api", eventsRouter);
 
 // 404 handler
 app.use((req, res) => {

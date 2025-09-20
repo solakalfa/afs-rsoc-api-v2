@@ -1,56 +1,47 @@
-// services/api/src/routes/api/events.mjs
 import { Router } from "express";
-import { db } from "../../lib/db.mjs";
+import * as DB from "../lib/db.mjs";
 
-async function getPoolReady() {
-  // אם אין pool מוכן – ננסה לאתחל 
-  let p = (typeof db.pool === "function") ? db.pool() : null;
-  if (!p || typeof p.query !== "function") {
-    try { await db.init(); } catch (_) {}
-    p = (typeof db.pool === "function") ? db.pool() : null;
-  }
-  return (p && typeof p.query === "function") ? p : null;
-}
+const r = Router();
 
-const router = Router();
+// מפעילים pool() אם קיים
+const pool = typeof DB.pool === "function" ? DB.pool() : null;
 
-// POST /api/events
-router.post("/events", async (req, res) => {
+r.post("/events", async (req, res) => {
   try {
     const { type, click_id, source, campaign, adset, timestamp } = req.body || {};
-    if (!type || !timestamp) return res.status(422).json({ error: "missing_required_fields" });
+    if (!type || !timestamp) {
+      return res.status(422).json({ error: "missing_required_fields" });
+    }
+    if (!pool || !pool.query) {
+      return res.status(500).json({ error: "db_not_ready" });
+    }
 
-    const pool = await getPoolReady();
-    if (!pool) return res.status(500).json({ error: "db_not_ready" });
-
-    const sql = `INSERT INTO events (type, click_id, source, campaign, adset, ts)
-                 VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`;
-    const params = [type, click_id ?? null, source ?? null, campaign ?? null, adset ?? null, timestamp];
-    const { rows } = await pool.query(sql, params);
-    return res.status(201).json({ id: rows[0]?.id ?? null });
+    const q = `insert into events(type, click_id, source, campaign, adset, ts)
+               values ($1,$2,$3,$4,$5,$6) returning id`;
+    const { rows } = await pool.query(q, [
+      type,
+      click_id || null,
+      source || null,
+      campaign || null,
+      adset || null,
+      timestamp,
+    ]);
+    return res.status(201).json({ id: rows[0].id });
   } catch (e) {
     return res.status(500).json({ error: "server_error", message: e?.message });
   }
 });
 
-// GET /api/events
-router.get("/events", async (req, res) => {
+r.get("/events", async (_req, res) => {
   try {
-    const pool = await getPoolReady();
-    if (!pool) return res.status(500).json({ error: "db_not_ready" });
-
-    const limit = Math.min(Number(req.query.limit || 20), 200);
-    const { rows } = await pool.query(
-      `SELECT id, type, click_id, source, campaign, adset, ts AS timestamp
-       FROM events
-       ORDER BY ts DESC
-       LIMIT $1`,
-      [limit]
-    );
+    if (!pool || !pool.query) {
+      return res.status(500).json({ error: "db_not_ready" });
+    }
+    const { rows } = await pool.query("select * from events order by ts desc limit 50");
     return res.json(rows);
   } catch (e) {
     return res.status(500).json({ error: "server_error", message: e?.message });
   }
 });
 
-export default router;
+export const router = r;

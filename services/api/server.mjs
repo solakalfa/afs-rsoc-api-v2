@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 console.log("DEBUG DATABASE_URL:", process.env.DATABASE_URL);
 
-
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { v4 as uuidv4 } from "uuid";
@@ -10,6 +9,7 @@ import { router as healthRouter } from "./src/routes/health.mjs";
 import { router as trackingRouter } from "./src/routes/tracking.mjs";
 import { router as convertRouter } from "./src/routes/convert.mjs";
 import { router as reportingRouter } from "./src/routes/reporting.mjs";
+import { router as eventsRouter } from "./src/routes/events.mjs";  // ← חדש
 import { db } from "./src/lib/db.mjs";
 
 const app = express();
@@ -52,6 +52,7 @@ app.use("/api", healthRouter);
 app.use("/api", trackingRouter);
 app.use("/api", convertRouter);
 app.use("/api", reportingRouter);
+app.use("/api", eventsRouter); // ← חדש
 
 // 404 handler
 app.use((req, res) => {

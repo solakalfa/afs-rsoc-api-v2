@@ -1,41 +1,30 @@
 // services/api/src/routes/api/events.mjs
 import { Router } from "express";
-import { db } from "../../lib/db.mjs";
+import * as DB from "../../lib/db.mjs";
 
-/**
- * Pick a working query function from the db layer.
- * Prefer db.query; fallback to db.pool.query.
- */
-function getQuery() {
-  if (db && typeof db.query === "function") return db.query.bind(db);
-  if (db && db.pool && typeof db.pool.query === "function") return db.pool.query.bind(db.pool);
+// Fallback query detector: DB.query → DB.db.query → DB.db.pool.query
+function pickQuery() {
+  if (typeof DB.query === "function") return DB.query;
+  if (DB.db && typeof DB.db.query === "function") return DB.db.query.bind(DB.db);
+  if (DB.db && DB.db.pool && typeof DB.db.pool.query === "function") {
+    return DB.db.pool.query.bind(DB.db.pool);
+  }
   return null;
 }
 
 const router = Router();
 
-// POST /api/events
 router.post("/events", async (req, res) => {
   try {
     const { type, click_id, source, campaign, adset, timestamp } = req.body || {};
     if (!type || !timestamp) return res.status(422).json({ error: "missing_required_fields" });
 
-    const query = getQuery();
+    const query = pickQuery();
     if (!query) return res.status(500).json({ error: "db_not_ready" });
 
-    const sql = `
-      INSERT INTO events (type, click_id, source, campaign, adset, ts)
-      VALUES ($1,$2,$3,$4,$5,$6)
-      RETURNING id
-    `;
-    const params = [
-      type,
-      click_id ?? null,
-      source ?? null,
-      campaign ?? null,
-      adset ?? null,
-      timestamp,
-    ];
+    const sql = `INSERT INTO events (type, click_id, source, campaign, adset, ts)
+                 VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`;
+    const params = [type, click_id ?? null, source ?? null, campaign ?? null, adset ?? null, timestamp];
     const { rows } = await query(sql, params);
     return res.status(201).json({ id: rows[0]?.id ?? null });
   } catch (e) {
@@ -43,20 +32,17 @@ router.post("/events", async (req, res) => {
   }
 });
 
-// GET /api/events
 router.get("/events", async (req, res) => {
   try {
-    const query = getQuery();
+    const query = pickQuery();
     if (!query) return res.status(500).json({ error: "db_not_ready" });
 
     const limit = Math.min(Number(req.query.limit || 20), 200);
     const { rows } = await query(
-      `
-        SELECT id, type, click_id, source, campaign, adset, ts AS timestamp
-        FROM events
-        ORDER BY ts DESC
-        LIMIT $1
-      `,
+      `SELECT id, type, click_id, source, campaign, adset, ts AS timestamp
+       FROM events
+       ORDER BY ts DESC
+       LIMIT $1`,
       [limit]
     );
     return res.json(rows);

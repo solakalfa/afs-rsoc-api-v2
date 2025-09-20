@@ -1,5 +1,4 @@
 // services/api/server.mjs
-
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 console.log("DEBUG DATABASE_URL:", process.env.DATABASE_URL);
@@ -12,7 +11,6 @@ import { router as healthRouter } from "./src/routes/health.mjs";
 import { router as trackingRouter } from "./src/routes/tracking.mjs";
 import { router as convertRouter } from "./src/routes/convert.mjs";
 import { router as reportingRouter } from "./src/routes/reporting.mjs";
-// === שינוי חשוב: ייבוא נכון של events כ-default מהנתיב תחת api/ ===
 import eventsRouter from "./src/routes/api/events.mjs";
 
 import { db } from "./src/lib/db.mjs";
@@ -40,15 +38,13 @@ app.use((req, res, next) => {
 
 // basic request logger
 app.use((req, _res, next) => {
-  console.log(
-    JSON.stringify({
-      t: new Date().toISOString(),
-      traceId: req.traceId,
-      method: req.method,
-      path: req.path,
-      ip: req.ip,
-    })
-  );
+  console.log(JSON.stringify({
+    t: new Date().toISOString(),
+    traceId: req.traceId,
+    method: req.method,
+    path: req.path,
+    ip: req.ip,
+  }));
   next();
 });
 
@@ -57,7 +53,7 @@ app.use("/api", healthRouter);
 app.use("/api", trackingRouter);
 app.use("/api", convertRouter);
 app.use("/api", reportingRouter);
-app.use("/api", eventsRouter); // ← חיווט events
+app.use("/api", eventsRouter);
 
 // 404 handler
 app.use((req, res) => {

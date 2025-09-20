@@ -1,42 +1,67 @@
+// services/api/src/routes/api/events.mjs
 import { Router } from "express";
+import * as DB from "../../lib/db.mjs";
 
-// טעינת pool בצורה סלחנית: אם יש export בשם pool נשתמש בו,
-// ואם יש פונקציה getPool() נזמן אותה.
-import * as db from "../../lib/db.mjs";
-const pool = db.pool ?? (typeof db.getPool === "function" ? db.getPool() : null);
+/**
+ * Robust DB query picker:
+ * 1) DB.query
+ * 2) DB.db.query
+ * 3) DB.db.pool.query
+ */
+const pickQuery = () => {
+  if (typeof DB.query === "function") return DB.query;
+  if (DB.db && typeof DB.db.query === "function") return DB.db.query.bind(DB.db);
+  if (DB.db && DB.db.pool && typeof DB.db.pool.query === "function") {
+    return DB.db.pool.query.bind(DB.db.pool);
+  }
+  return null;
+};
 
-const r = Router();
+const router = Router();
 
-r.post("/", async (req, res) => {
+// POST /api/events
+router.post("/events", async (req, res) => {
   try {
     const { type, click_id, source, campaign, adset, timestamp } = req.body || {};
-    if (!type || !timestamp) return res.status(422).json({ error: "missing_required_fields" });
-    if (!pool) return res.status(500).json({ error: "db_not_ready" });
+    if (!type || !timestamp) {
+      return res.status(422).json({ error: "missing_required_fields" });
+    }
+    const query = pickQuery();
+    if (!query) return res.status(500).json({ error: "db_not_ready" });
 
-    const q = `insert into events(type, click_id, source, campaign, adset, ts)
-               values ($1,$2,$3,$4,$5,$6) returning id`;
-    const { rows } = await pool.query(q, [
+    const sql = `
+      INSERT INTO events (type, click_id, source, campaign, adset, ts)
+      VALUES ($1,$2,$3,$4,$5,$6) RETURNING id
+    `;
+    const params = [
       type,
-      click_id || null,
-      source || null,
-      campaign || null,
-      adset || null,
-      timestamp
-    ]);
-    return res.status(201).json({ id: rows[0].id });
+      click_id ?? null,
+      source ?? null,
+      campaign ?? null,
+      adset ?? null,
+      timestamp,
+    ];
+    const { rows } = await query(sql, params);
+    return res.status(201).json({ id: rows[0]?.id ?? null });
   } catch (e) {
     return res.status(500).json({ error: "server_error", message: e?.message });
   }
 });
 
-r.get("/", async (req, res) => {
+// GET /api/events
+router.get("/events", async (req, res) => {
   try {
-    const limit = Math.min(Number(req.query.limit || 20), 200);
-    if (!pool) return res.status(500).json({ error: "db_not_ready" });
+    const query = pickQuery();
+    if (!query) return res.status(500).json({ error: "db_not_ready" });
 
-    const { rows } = await pool.query(
-      `select id, type, click_id, source, campaign, adset, ts as timestamp
-       from events order by ts desc limit $1`,
+    const limit = Math.min(Number(req.query.limit || 20), 200);
+    const { rows } = await query(
+      `
+      SELECT id, type, click_id, source, campaign, adset, ts AS timestamp
+      FROM events
+      ORDER BY ts DESC
+      LIMIT $1
+      `,
       [limit]
     );
     return res.json(rows);
@@ -45,4 +70,4 @@ r.get("/", async (req, res) => {
   }
 });
 
-export default r;
+export default router;

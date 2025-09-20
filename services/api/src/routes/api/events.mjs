@@ -2,12 +2,18 @@
 import { Router } from "express";
 import { db } from "../../lib/db.mjs";
 
+// החלף את getPoolReady בגרסה הזו:
 async function getPoolReady() {
-  // אם אין pool מוכן – ננסה לאתחל
-  let p = (typeof db.pool === "function") ? db.pool() : null;
+  // קח Pool גם אם הוא פונקציה וגם אם הוא שדה
+  let p =
+    (typeof db.pool === "function" ? db.pool() : (db.pool || null)) ||
+    (typeof db.getPool === "function" ? db.getPool() : null);
+
   if (!p || typeof p.query !== "function") {
     try { await db.init(); } catch (_) {}
-    p = (typeof db.pool === "function") ? db.pool() : null;
+    p =
+      (typeof db.pool === "function" ? db.pool() : (db.pool || null)) ||
+      (typeof db.getPool === "function" ? db.getPool() : null);
   }
   return (p && typeof p.query === "function") ? p : null;
 }

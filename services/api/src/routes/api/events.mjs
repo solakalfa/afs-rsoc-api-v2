@@ -1,21 +1,16 @@
 // services/api/src/routes/api/events.mjs
 import { Router } from "express";
-import * as DB from "../../lib/db.mjs";
+import { db } from "../../lib/db.mjs";
 
 /**
- * Robust DB query picker:
- * 1) DB.query
- * 2) DB.db.query
- * 3) DB.db.pool.query
+ * Pick a working query function from the db layer.
+ * Prefer db.query; fallback to db.pool.query.
  */
-const pickQuery = () => {
-  if (typeof DB.query === "function") return DB.query;
-  if (DB.db && typeof DB.db.query === "function") return DB.db.query.bind(DB.db);
-  if (DB.db && DB.db.pool && typeof DB.db.pool.query === "function") {
-    return DB.db.pool.query.bind(DB.db.pool);
-  }
+function getQuery() {
+  if (db && typeof db.query === "function") return db.query.bind(db);
+  if (db && db.pool && typeof db.pool.query === "function") return db.pool.query.bind(db.pool);
   return null;
-};
+}
 
 const router = Router();
 
@@ -23,15 +18,15 @@ const router = Router();
 router.post("/events", async (req, res) => {
   try {
     const { type, click_id, source, campaign, adset, timestamp } = req.body || {};
-    if (!type || !timestamp) {
-      return res.status(422).json({ error: "missing_required_fields" });
-    }
-    const query = pickQuery();
+    if (!type || !timestamp) return res.status(422).json({ error: "missing_required_fields" });
+
+    const query = getQuery();
     if (!query) return res.status(500).json({ error: "db_not_ready" });
 
     const sql = `
       INSERT INTO events (type, click_id, source, campaign, adset, ts)
-      VALUES ($1,$2,$3,$4,$5,$6) RETURNING id
+      VALUES ($1,$2,$3,$4,$5,$6)
+      RETURNING id
     `;
     const params = [
       type,
@@ -51,16 +46,16 @@ router.post("/events", async (req, res) => {
 // GET /api/events
 router.get("/events", async (req, res) => {
   try {
-    const query = pickQuery();
+    const query = getQuery();
     if (!query) return res.status(500).json({ error: "db_not_ready" });
 
     const limit = Math.min(Number(req.query.limit || 20), 200);
     const { rows } = await query(
       `
-      SELECT id, type, click_id, source, campaign, adset, ts AS timestamp
-      FROM events
-      ORDER BY ts DESC
-      LIMIT $1
+        SELECT id, type, click_id, source, campaign, adset, ts AS timestamp
+        FROM events
+        ORDER BY ts DESC
+        LIMIT $1
       `,
       [limit]
     );

@@ -1,46 +1,31 @@
 // services/api/src/routes/api/events.mjs
 import { Router } from "express";
-import * as DB from "../../lib/db.mjs";
-import pg from "pg";
+import { db } from "../../lib/db.mjs";
 
-let localPool = null;
-function getPool() {
-  // 1) אם לשכבת ה-DB שלכם יש pool() תקין – נשתמש בו
-  try {
-    if (DB && typeof DB.pool === "function") {
-      const p = DB.pool();
-      if (p && typeof p.query === "function") return p;
-    }
-  } catch (_) {}
-  // 2) אחרת, נקים Pool עצמאי מה-ENV (פעם אחת)
-  if (!localPool) {
-    const url = process.env.DATABASE_URL;
-    if (!url) return null;
-    localPool = new pg.Pool({ connectionString: url });
+async function getPoolReady() {
+  // אם אין pool מוכן – ננסה לאתחל
+  let p = (typeof db.pool === "function") ? db.pool() : null;
+  if (!p || typeof p.query !== "function") {
+    try { await db.init(); } catch (_) {}
+    p = (typeof db.pool === "function") ? db.pool() : null;
   }
-  return localPool;
+  return (p && typeof p.query === "function") ? p : null;
 }
 
 const router = Router();
 
+// POST /api/events
 router.post("/events", async (req, res) => {
   try {
     const { type, click_id, source, campaign, adset, timestamp } = req.body || {};
     if (!type || !timestamp) return res.status(422).json({ error: "missing_required_fields" });
 
-    const pool = getPool();
+    const pool = await getPoolReady();
     if (!pool) return res.status(500).json({ error: "db_not_ready" });
 
     const sql = `INSERT INTO events (type, click_id, source, campaign, adset, ts)
                  VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`;
-    const params = [
-      type,
-      click_id ?? null,
-      source ?? null,
-      campaign ?? null,
-      adset ?? null,
-      timestamp,
-    ];
+    const params = [type, click_id ?? null, source ?? null, campaign ?? null, adset ?? null, timestamp];
     const { rows } = await pool.query(sql, params);
     return res.status(201).json({ id: rows[0]?.id ?? null });
   } catch (e) {
@@ -48,9 +33,10 @@ router.post("/events", async (req, res) => {
   }
 });
 
+// GET /api/events
 router.get("/events", async (req, res) => {
   try {
-    const pool = getPool();
+    const pool = await getPoolReady();
     if (!pool) return res.status(500).json({ error: "db_not_ready" });
 
     const limit = Math.min(Number(req.query.limit || 20), 200);

@@ -3,7 +3,7 @@ import { Router } from "express";
 import { db } from "../../lib/db.mjs";
 
 async function getPoolReady() {
-  // אם אין pool מוכן – ננסה לאתחל
+  // אם אין pool מוכן – ננסה לאתחל 
   let p = (typeof db.pool === "function") ? db.pool() : null;
   if (!p || typeof p.query !== "function") {
     try { await db.init(); } catch (_) {}

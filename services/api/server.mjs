@@ -1,4 +1,5 @@
 // services/api/server.mjs
+
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 console.log("DEBUG DATABASE_URL:", process.env.DATABASE_URL);

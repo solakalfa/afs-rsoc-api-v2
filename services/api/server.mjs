@@ -74,4 +74,4 @@ app.listen(PORT, () => {
 
 export default app;
 
-app.use('/api/events', express.json({ limit: '8kb' }), eventsRouter);
+app.use('/api', express.json({ limit: '8kb' }), eventsRouter);

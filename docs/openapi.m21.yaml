@@ -1,0 +1,231 @@
+openapi: 3.0.3
+info:
+  title: RSOC API (Internal M2.1) — Auth & Validation
+  version: 0.2.1-m21
+  description: Internal OpenAPI for RSOC during M2.1. Includes Bearer auth and 401/422
+    responses for tracking/convert. Not the Tarzo external spec.
+servers:
+- url: '{baseUrl}'
+  variables:
+    baseUrl:
+      default: http://localhost:8080
+paths:
+  /api/tracking:
+    post:
+      summary: Ingest tracking event (click/view/visit)
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackingEvent'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                - ok
+              examples:
+                default:
+                  value:
+                    ok: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+  /api/convert:
+    post:
+      summary: Ingest conversion event
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversionEvent'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                - ok
+              examples:
+                default:
+                  value:
+                    ok: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+  /api/health:
+    get:
+      summary: Service health probe
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                - ok
+  /api/health-db:
+    get:
+      summary: Database connectivity probe
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                - ok
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    TrackingEvent:
+      type: object
+      properties:
+        event:
+          type: string
+          enum:
+          - click
+          - view
+          - visit
+        clickId:
+          type: string
+          minLength: 1
+        ts:
+          type: integer
+          description: Epoch milliseconds
+          minimum: 1
+        userAgent:
+          type: string
+        ip:
+          type: string
+          description: source IP (optional)
+        meta:
+          type: object
+          additionalProperties: true
+      required:
+      - event
+      - clickId
+      - ts
+      example:
+        event: click
+        clickId: abc123
+        ts: 1737216000000
+    ConversionEvent:
+      type: object
+      properties:
+        event:
+          type: string
+          enum:
+          - conversion
+        clickId:
+          type: string
+          minLength: 1
+        convType:
+          type: string
+          minLength: 1
+          description: e.g. lead, purchase
+        value:
+          type: number
+          minimum: 0
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        ts:
+          type: integer
+          description: Epoch milliseconds
+          minimum: 1
+        meta:
+          type: object
+          additionalProperties: true
+      required:
+      - event
+      - clickId
+      - convType
+      - ts
+      example:
+        event: conversion
+        clickId: abc123
+        convType: lead
+        ts: 1737216000000
+    UnauthorizedError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Unauthorized
+      required:
+      - error
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Unprocessable Entity
+        issues:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                example: clickId
+              message:
+                type: string
+                example: Required
+              code:
+                type: string
+                example: too_small
+            required:
+            - path
+            - message
+            - code
+      required:
+      - error
+      - issues

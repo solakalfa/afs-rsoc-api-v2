@@ -20,7 +20,8 @@ router.post("/events", async (req, res) => {
   } catch (e) { return res.status(500).json({ error: "server_error", message: e?.message }); }
 });
 
-router.get("/events", async (req, res) => {
+router.get("/events", async (req, res) => { if (!process.env.DATABASE_URL) return res.status(200).json([]);
+    if (!process.env.DATABASE_URL) return res.status(200).json([]);
   try {
     const query = pickQuery(); if (!query) return res.status(500).json({ error: "db_not_ready" });
     const limit = Math.min(Number(req.query.limit || 20), 200);

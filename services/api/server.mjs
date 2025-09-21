@@ -11,7 +11,8 @@ import { router as healthRouter } from "./src/routes/health.mjs";
 import { router as trackingRouter } from "./src/routes/tracking.mjs";
 import { router as convertRouter } from "./src/routes/convert.mjs";
 import { router as reportingRouter } from "./src/routes/reporting.mjs";
-import { router as eventsRouter } from "./src/routes/api/events.mjs";
+import express from "express";
+import { router as eventsRouter } from "./src/routes/events.mjs";
 
 import { db } from "./src/lib/db.mjs";
 

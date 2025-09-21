@@ -1,9 +1,9 @@
+import express from "express";
 // services/api/server.mjs
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 console.log("DEBUG DATABASE_URL:", process.env.DATABASE_URL);
 
-import express from "express";
 import rateLimit from "express-rate-limit";
 import { v4 as uuidv4 } from "uuid";
 
@@ -11,7 +11,6 @@ import { router as healthRouter } from "./src/routes/health.mjs";
 import { router as trackingRouter } from "./src/routes/tracking.mjs";
 import { router as convertRouter } from "./src/routes/convert.mjs";
 import { router as reportingRouter } from "./src/routes/reporting.mjs";
-import express from "express";
 import { router as eventsRouter } from "./src/routes/events.mjs";
 
 import { db } from "./src/lib/db.mjs";
